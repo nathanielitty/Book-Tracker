@@ -1,4 +1,4 @@
-import React from 'react'
+//import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import NavBar from './components/NavBar'
@@ -12,8 +12,8 @@ import './App.css'
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <NavBar />
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -24,8 +24,8 @@ function App() {
           <Route path="/" element={<Navigate to="/search" />} />
           <Route path="*" element={<Navigate to="/search" />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   )
 }
 

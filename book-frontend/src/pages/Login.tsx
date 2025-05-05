@@ -11,8 +11,15 @@ const Login: React.FC = () => {
     e.preventDefault();
     try {
       await login(username, password);
-    } catch (err: any) {
-      setError(err.response?.data || 'Login failed');
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        (err as { response?: { data?: string } }).response?.data
+      ) {
+        setError((err as { response?: { data?: string } }).response?.data || 'An unknown error occurred');
+      } else {
+        setError('Login failed');
+      }
     }
   };
 

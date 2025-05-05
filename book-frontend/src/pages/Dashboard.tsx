@@ -1,48 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { Recommendation } from '../types';
 import '../App.css';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-type RecDto = {
-  externalId: string;
-  title: string;
-  thumbnailUrl: string;
-  score: number;
-  computedAt: string;
-};
-
 const Dashboard: React.FC = () => {
-  const [recs, setRecs] = useState<RecDto[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    api.get<RecDto[]>('/recommendations')
-      .then(res => setRecs(res.data))
-      .catch(() => setError('Failed to load recommendations'));
+    fetchRecommendations();
   }, []);
 
-  if (error) return <p className="error">{error}</p>;
+  const fetchRecommendations = async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get<Recommendation[]>('/recommendations');
+      setRecommendations(res.data);
+    } catch (err) {
+      setError('Failed to load recommendations');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) return <div className="loading">Loading recommendations...</div>;
 
   return (
-    <div className="page">
-      <h2>Recommendations</h2>
-      <div className="rec-list">
-        {recs.map(r => (
-          <div key={r.externalId} className="rec-card">
-            {r.thumbnailUrl && <img src={r.thumbnailUrl} alt={r.title} />}
-            <p>{r.title}</p>
+    <div className="page dashboard-page">
+      <h2>Your Book Recommendations</h2>
+      {error && <p className="error">{error}</p>}
+      
+      {recommendations.length === 0 && !isLoading ? (
+        <p className="no-recommendations">
+          No recommendations available yet. Try rating more books to get personalized recommendations.
+        </p>
+      ) : (
+        <>
+          <div className="recommendation-list">
+            {recommendations.map(rec => (
+              <div key={rec.externalId} className="recommendation-card">
+                {rec.thumbnailUrl && (
+                  <div className="book-cover">
+                    <img src={rec.thumbnailUrl} alt={rec.title} />
+                  </div>
+                )}
+                <div className="recommendation-info">
+                  <h3 className="book-title">{rec.title}</h3>
+                  <div className="recommendation-score">
+                    Score: <span className="score-value">{rec.score.toFixed(1)}</span>
+                  </div>
+                  <div className="recommendation-date">
+                    Computed: {new Date(rec.computedAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <h3>Top Scores</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={recs.slice(0, 10).map(r => ({ name: r.title.substring(0,10)+'...', score: r.score }))}>
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="score" fill="#8884d8" />
-        </BarChart>
-      </ResponsiveContainer>
+
+          <div className="recommendation-chart">
+            <h3>Top Recommendations</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart 
+                data={recommendations.slice(0, 10).map(r => ({ 
+                  name: r.title.length > 20 ? r.title.substring(0, 20) + '...' : r.title, 
+                  score: +r.score.toFixed(2) 
+                }))}
+              >
+                <XAxis dataKey="name" />
+                <YAxis domain={[0, 5]} />
+                <Tooltip />
+                <Bar dataKey="score" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
     </div>
   );
 };

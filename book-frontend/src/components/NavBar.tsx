@@ -1,34 +1,71 @@
 import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { Shelf } from '../types';
 
 const NavBar: React.FC = () => {
   const { isAuthenticated, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+  };
+
+  // Format shelf name for display
+  const formatShelfName = (shelf: string) => {
+    return shelf.replace(/_/g, ' ').toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Check if a link is active
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'active-link' : '';
   };
 
   return (
     <nav className="navbar">
-      <Link to="/search">Search</Link>
-      {isAuthenticated && (
-        <>
-          <Link to="/shelf/WANT_TO_READ">Want to Read</Link>
-          <Link to="/shelf/CURRENTLY_READING">Currently Reading</Link>
-          <Link to="/shelf/COMPLETED">Completed</Link>
-          <Link to="/dashboard">Recommendations</Link>
-          <button onClick={handleLogout}>Logout</button>
-        </>
-      )}
-      {!isAuthenticated && (
-        <>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
-        </>
-      )}
+      <div className="nav-brand">
+        <Link to="/" className={isActive('/')}>
+          📚 Book Tracker
+        </Link>
+      </div>
+
+      <div className="nav-links">
+        <Link to="/search" className={isActive('/search')}>Search</Link>
+        
+        {isAuthenticated && (
+          <>
+            {/* Render links for each shelf type */}
+            {Object.values(Shelf).map(shelf => (
+              <Link 
+                key={shelf}
+                to={`/shelf/${shelf}`} 
+                className={isActive(`/shelf/${shelf}`)}
+              >
+                {formatShelfName(shelf)}
+              </Link>
+            ))}
+            
+            <Link to="/dashboard" className={isActive('/dashboard')}>
+              Recommendations
+            </Link>
+          </>
+        )}
+      </div>
+      
+      <div className="nav-auth">
+        {isAuthenticated ? (
+          <button onClick={handleLogout} className="logout-btn">Logout</button>
+        ) : (
+          <>
+            <Link to="/login" className={isActive('/login')}>Login</Link>
+            <Link to="/register" className={isActive('/register')}>Register</Link>
+          </>
+        )}
+      </div>
     </nav>
   );
 };
