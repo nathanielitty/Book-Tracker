@@ -2,7 +2,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import NavBar from './components/NavBar'
+import Footer from './components/Footer'
 import PrivateRoute from './components/PrivateRoute'
+import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Search from './pages/Search'
@@ -14,16 +16,21 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <NavBar />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/search" element={<PrivateRoute><Search /></PrivateRoute>} />
-          <Route path="/shelf/:shelf" element={<PrivateRoute><Shelf /></PrivateRoute>} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/" element={<Navigate to="/search" />} />
-          <Route path="*" element={<Navigate to="/search" />} />
-        </Routes>
+        <div className="app-container">
+          <NavBar />
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/search" element={<PrivateRoute><Search /></PrivateRoute>} />
+              <Route path="/shelf/:shelf" element={<PrivateRoute><Shelf /></PrivateRoute>} />
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
       </AuthProvider>
     </Router>
   )
