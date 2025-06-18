@@ -1,82 +1,198 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios';
-import { Recommendation } from '../types';
-import '../App.css';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { completeBookList } from '../data/sampleBooks';
+
+interface DashboardStats {
+  totalBooks: number;
+  readBooks: number;
+  currentlyReading: number;
+  wantToRead: number;
+  averageRating: number;
+  totalPages: number;
+  favoriteGenres: string[];
+  readingGoal: number;
+  readingProgress: number;
+}
 
 const Dashboard: React.FC = () => {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalBooks: 0,
+    readBooks: 0,
+    currentlyReading: 0,
+    wantToRead: 0,
+    averageRating: 0,
+    totalPages: 0,
+    favoriteGenres: [],
+    readingGoal: 50,
+    readingProgress: 0
+  });
+
+  const recentBooks = completeBookList.slice(0, 6);
+  const topRatedBooks = completeBookList
+    .sort((a, b) => b.averageRating - a.averageRating)
+    .slice(0, 6);
 
   useEffect(() => {
-    fetchRecommendations();
+    // Simulate user data - in a real app this would come from API
+    const mockStats: DashboardStats = {
+      totalBooks: 127,
+      readBooks: 89,
+      currentlyReading: 5,
+      wantToRead: 33,
+      averageRating: 4.2,
+      totalPages: 28457,
+      favoriteGenres: ['Fantasy', 'Science Fiction', 'Historical Fiction', 'Mystery'],
+      readingGoal: 50,
+      readingProgress: 89
+    };
+    setStats(mockStats);
   }, []);
 
-  const fetchRecommendations = async () => {
-    setIsLoading(true);
-    try {
-      const res = await api.get<Recommendation[]>('/recommendations');
-      setRecommendations(res.data);
-    } catch (err) {
-      setError('Failed to load recommendations');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) return <div className="loading">Loading recommendations...</div>;
+  const progressPercentage = (stats.readingProgress / stats.readingGoal) * 100;
 
   return (
-    <div className="page dashboard-page">
-      <h2>Your Book Recommendations</h2>
-      {error && <p className="error">{error}</p>}
-      
-      {recommendations.length === 0 && !isLoading ? (
-        <p className="no-recommendations">
-          No recommendations available yet. Try rating more books to get personalized recommendations.
-        </p>
-      ) : (
-        <>
-          <div className="recommendation-list">
-            {recommendations.map(rec => (
-              <div key={rec.externalId} className="recommendation-card">
-                {rec.thumbnailUrl && (
-                  <div className="book-cover">
-                    <img src={rec.thumbnailUrl} alt={rec.title} />
-                  </div>
-                )}
-                <div className="recommendation-info">
-                  <h3 className="book-title">{rec.title}</h3>
-                  <div className="recommendation-score">
-                    Score: <span className="score-value">{rec.score.toFixed(1)}</span>
-                  </div>
-                  <div className="recommendation-date">
-                    Computed: {new Date(rec.computedAt).toLocaleDateString()}
-                  </div>
+    <div className="page">
+      <div className="page-header">
+        <h1>📊 Reading Dashboard</h1>
+        <p>Track your reading journey and discover your next favorite book</p>
+      </div>
+
+      {/* Reading Goals Section */}
+      <div className="dashboard-section">
+        <h2>📈 2025 Reading Goal</h2>
+        <div className="reading-goal-card">
+          <div className="goal-progress">
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+              ></div>
+            </div>
+            <div className="goal-text">
+              <span className="goal-current">{stats.readingProgress}</span>
+              <span className="goal-separator">/</span>
+              <span className="goal-target">{stats.readingGoal}</span>
+              <span className="goal-label">books</span>
+            </div>
+          </div>
+          <div className="goal-status">
+            {progressPercentage >= 100 ? 
+              '🎉 Congratulations! You\'ve reached your goal!' : 
+              `${Math.round(progressPercentage)}% complete - Keep going!`
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="dashboard-section">
+        <h2>📚 Reading Statistics</h2>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span className="stat-number">{stats.totalBooks}</span>
+            <span className="stat-label">Total Books</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{stats.readBooks}</span>
+            <span className="stat-label">Books Read</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{stats.currentlyReading}</span>
+            <span className="stat-label">Currently Reading</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{stats.wantToRead}</span>
+            <span className="stat-label">Want to Read</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{stats.averageRating}⭐</span>
+            <span className="stat-label">Average Rating</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-number">{stats.totalPages.toLocaleString()}</span>
+            <span className="stat-label">Pages Read</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Favorite Genres */}
+      <div className="dashboard-section">
+        <h2>🎭 Favorite Genres</h2>
+        <div className="genre-tags">
+          {stats.favoriteGenres.map((genre, index) => (
+            <span key={index} className="genre-tag">
+              {genre}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="dashboard-section">
+        <h2>📖 Recently Added Books</h2>
+        <div className="book-grid">
+          {recentBooks.map(book => (
+            <div key={book.id} className="dashboard-book-card">
+              <div className="book-cover-small">
+                <img src={book.coverUrl} alt={book.title} />
+              </div>
+              <div className="book-details-small">
+                <h4>{book.title}</h4>
+                <p>{book.author}</p>
+                <div className="book-rating">
+                  <span>⭐ {book.averageRating}</span>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="recommendation-chart">
-            <h3>Top Recommendations</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart 
-                data={recommendations.slice(0, 10).map(r => ({ 
-                  name: r.title.length > 20 ? r.title.substring(0, 20) + '...' : r.title, 
-                  score: +r.score.toFixed(2) 
-                }))}
-              >
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 5]} />
-                <Tooltip />
-                <Bar dataKey="score" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Top Rated Books */}
+      <div className="dashboard-section">
+        <h2>🌟 Highest Rated Books</h2>
+        <div className="book-grid">
+          {topRatedBooks.map(book => (
+            <div key={book.id} className="dashboard-book-card">
+              <div className="book-cover-small">
+                <img src={book.coverUrl} alt={book.title} />
+              </div>
+              <div className="book-details-small">
+                <h4>{book.title}</h4>
+                <p>{book.author}</p>
+                <div className="book-rating">
+                  <span>⭐ {book.averageRating}</span>
+                  <span className="rating-count">({book.ratingsCount.toLocaleString()})</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reading Recommendations */}
+      <div className="dashboard-section">
+        <h2>💡 Recommended for You</h2>
+        <div className="recommendation-cards">
+          <div className="recommendation-card">
+            <h4>📚 Based on Your Reading History</h4>
+            <p>Since you enjoy Fantasy and Science Fiction, you might like:</p>
+            <div className="recommendation-list">
+              <span>• The Fifth Season by N.K. Jemisin</span>
+              <span>• Neuromancer by William Gibson</span>
+              <span>• The Priory of the Orange Tree by Samantha Shannon</span>
+            </div>
           </div>
-        </>
-      )}
+          <div className="recommendation-card">
+            <h4>🔥 Trending Now</h4>
+            <p>Popular books other readers are loving:</p>
+            <div className="recommendation-list">
+              <span>• Fourth Wing by Rebecca Yarros</span>
+              <span>• Tomorrow, and Tomorrow, and Tomorrow by Gabrielle Zevin</span>
+              <span>• The Atlas Six by Olivie Blake</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
