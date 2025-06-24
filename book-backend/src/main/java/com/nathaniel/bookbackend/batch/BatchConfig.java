@@ -1,5 +1,7 @@
 package com.nathaniel.bookbackend.batch;
 
+// Temporarily disabled batch processing for demo
+/*
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -41,3 +43,4 @@ public class BatchConfig {
                 .build();
     }
 }
+*/
