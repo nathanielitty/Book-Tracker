@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: notification-service
+    
+  kafka:
+    bootstrap-servers: kafka:29092
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      
+  cloud:
+    discovery:
+      enabled: false
+
+server:
+  port: 8085
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Disable Eureka
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    com.nathaniel.bookbackend: DEBUG
