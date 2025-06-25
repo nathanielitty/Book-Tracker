@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: 
+              - "http://localhost:5173"
+              - "http://localhost:5174"
+              - "http://localhost:4173"
+              - "http://localhost:3000"
+              - "http://localhost:8080"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - HEAD
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+      # routes:
+      #   - id: auth-service
+      #     uri: http://${AUTH_SERVICE_HOST:localhost}:8081
+      #     predicates:
+      #       - Path=/api/v1/auth/**
+      #     filters:
+      #       - StripPrefix=0
+
+      #   - id: book-service
+      #     uri: http://${BOOK_SERVICE_HOST:localhost}:8082
+      #     predicates:
+      #       - Path=/books/**
+      #     filters:
+      #       - StripPrefix=0
+
+      #   - id: library-service
+      #     uri: http://${LIBRARY_SERVICE_HOST:localhost}:8083
+      #     predicates:
+      #       - Path=/library/**
+      #     filters:
+      #       - StripPrefix=0
+
+      #   - id: notification-service
+      #     uri: http://${NOTIFICATION_SERVICE_HOST:localhost}:8084
+      #     predicates:
+      #       - Path=/notifications/**
+      #     filters:
+      #       - StripPrefix=0
+
+      #   - id: analytics-service
+      #     uri: http://${ANALYTICS_SERVICE_HOST:localhost}:8085
+      #     predicates:
+      #       - Path=/analytics/**
+      #     filters:
+      #       - StripPrefix=0
+      discovery:
+        locator:
+          enabled: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Disable Eureka
+eureka:
+  client:
+    enabled: false

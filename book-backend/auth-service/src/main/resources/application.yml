@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: auth-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:development}
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres-auth}:5432/auth_db
+    username: ${SPRING_DATASOURCE_USERNAME:auth_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:auth_password}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  cloud:
+    discovery:
+      enabled: false
+
+server:
+  port: 8081
+
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-here-must-be-long-enough-for-hs256-algorithm-to-work-properly}
+  expiration:
+    ms: ${JWT_EXPIRATION_MS:3600000}
+  refresh:
+    expiration:
+      ms: ${JWT_REFRESH_EXPIRATION_MS:86400000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Disable Eureka
+eureka:
+  client:
+    enabled: false
