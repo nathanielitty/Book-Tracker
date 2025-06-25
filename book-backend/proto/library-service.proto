@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package com.nathaniel.bookbackend.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.nathaniel.bookbackend.grpc";
+option java_outer_classname = "LibraryServiceProto";
+
+// Library Service gRPC definition
+service LibraryService {
+  // Get user's books
+  rpc GetUserBooks (UserBooksRequest) returns (UserBooksResponse) {}
+  // Update book status
+  rpc UpdateBookStatus (BookStatusRequest) returns (BookStatusResponse) {}
+  // Update reading progress
+  rpc UpdateReadingProgress (ProgressRequest) returns (ProgressResponse) {}
+  // Add review and rating
+  rpc AddReview (ReviewRequest) returns (ReviewResponse) {}
+}
+
+// Request to get user's books
+message UserBooksRequest {
+  string user_id = 1;
+  string status = 2;  // Optional, if not provided returns all books
+  int32 page = 3;
+  int32 size = 4;
+}
+
+// Response containing user's books
+message UserBooksResponse {
+  repeated UserBook books = 1;
+  int32 total_elements = 2;
+  int32 total_pages = 3;
+}
+
+// Request to update book status
+message BookStatusRequest {
+  string user_id = 1;
+  string book_id = 2;
+  string status = 3;
+}
+
+// Response for book status update
+message BookStatusResponse {
+  UserBook book = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+// Request to update reading progress
+message ProgressRequest {
+  string user_id = 1;
+  string book_id = 2;
+  int32 current_page = 3;
+  int32 total_pages = 4;
+}
+
+// Response for reading progress update
+message ProgressResponse {
+  UserBook book = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+// Request to add review and rating
+message ReviewRequest {
+  string user_id = 1;
+  string book_id = 2;
+  string review = 3;
+  double rating = 4;
+}
+
+// Response for review and rating
+message ReviewResponse {
+  UserBook book = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+// UserBook message type
+message UserBook {
+  string user_id = 1;
+  string book_id = 2;
+  string status = 3;
+  string started_at = 4;
+  string finished_at = 5;
+  int32 current_page = 6;
+  int32 total_pages = 7;
+  double rating = 8;
+  string review = 9;
+}

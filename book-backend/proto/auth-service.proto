@@ -1,0 +1,31 @@
+syntax = "proto3";
+package com.nathaniel.bookbackend.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.nathaniel.bookbackend.grpc";
+
+service AuthService {
+  rpc ValidateToken(TokenValidationRequest) returns (TokenValidationResponse) {}
+  rpc GetUserDetails(UserRequest) returns (UserResponse) {}
+}
+
+message TokenValidationRequest {
+  string token = 1;
+}
+
+message TokenValidationResponse {
+  bool valid = 1;
+  string user_id = 2;
+  repeated string roles = 3;
+}
+
+message UserRequest {
+  string user_id = 1;
+}
+
+message UserResponse {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  repeated string roles = 4;
+}

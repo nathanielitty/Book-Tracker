@@ -1,0 +1,47 @@
+syntax = "proto3";
+package com.nathaniel.bookbackend.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.nathaniel.bookbackend.grpc";
+
+service BookService {
+  rpc GetBook(BookRequest) returns (BookResponse) {}
+  rpc SearchBooks(SearchRequest) returns (SearchResponse) {}
+  rpc UpdateBookStatus(UpdateBookStatusRequest) returns (UpdateBookStatusResponse) {}
+}
+
+message BookRequest {
+  string book_id = 1;
+}
+
+message BookResponse {
+  string id = 1;
+  string title = 2;
+  string author = 3;
+  string isbn = 4;
+  string description = 5;
+  string cover_url = 6;
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 page = 2;
+  int32 size = 3;
+}
+
+message SearchResponse {
+  repeated BookResponse books = 1;
+  int32 total_pages = 2;
+  int64 total_elements = 3;
+}
+
+message UpdateBookStatusRequest {
+  string book_id = 1;
+  string status = 2;
+  string user_id = 3;
+}
+
+message UpdateBookStatusResponse {
+  bool success = 1;
+  string message = 2;
+}
