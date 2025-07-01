@@ -1,9 +1,11 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { login as apiLogin, register as apiRegister } from '../api/authApi';
 
 interface AuthContextType {
   token: string | null;
+  userId: string | null;
+  username: string | null;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -12,6 +14,8 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({
   token: null,
+  userId: null,
+  username: null,
   login: async () => {},
   register: async () => {},
   logout: () => {},
@@ -20,31 +24,77 @@ export const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [userId, setUserId] = useState<string | null>(localStorage.getItem('userId'));
+  const [username, setUsername] = useState<string | null>(localStorage.getItem('username'));
   const navigate = useNavigate();
 
+  const logout = React.useCallback(() => {
+    setToken(null);
+    setUserId(null);
+    setUsername(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    navigate('/login');
+  }, [navigate]);
+
   useEffect(() => {
-    if (token) localStorage.setItem('token', token);
-    else localStorage.removeItem('token');
-  }, [token]);
+    // Temporarily disable token validation to test login flow
+    // const validateSession = async () => {
+    //   if (token) {
+    //     try {
+    //       const isValid = await validateToken();
+    //       if (!isValid) {
+    //         logout();
+    //       }
+    //     } catch (error) {
+    //       // If validation fails, logout silently
+    //       console.warn('Token validation failed:', error);
+    //       logout();
+    //     }
+    //   }
+    // };
+    // validateSession();
+  }, [token, logout]);
+
+  useEffect(() => {
+    if (token && userId && username) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('username', username);
+    } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+    }
+  }, [token, userId, username]);
 
   const login = async (username: string, password: string) => {
-    const res = await api.post('/auth/login', { username, password });
-    setToken(res.data.token);
+    const response = await apiLogin({ username, password });
+    setToken(response.token);
+    setUserId(response.userId);
+    setUsername(response.username);
     navigate('/');
   };
 
   const register = async (username: string, email: string, password: string) => {
-    await api.post('/auth/register', { username, email, password });
-    await login(username, password);
-  };
-
-  const logout = () => {
-    setToken(null);
-    navigate('/login');
+    const response = await apiRegister({ username, email, password });
+    setToken(response.token);
+    setUserId(response.userId);
+    setUsername(response.username);
+    navigate('/');
   };
 
   return (
-    <AuthContext.Provider value={{ token, login, register, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{
+      token,
+      userId,
+      username,
+      login,
+      register,
+      logout,
+      isAuthenticated: !!token
+    }}>
       {children}
     </AuthContext.Provider>
   );
