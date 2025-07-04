@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { completeBookList, SampleBook } from '../data/sampleBooks';
 import { Shelf } from '../types';
+import { Search as SearchIcon, Filter, X, Star } from 'lucide-react';
 
 const Search: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -26,7 +27,7 @@ const Search: React.FC = () => {
     // Show popular books initially
     const popularBooks = completeBookList
       .sort((a, b) => b.ratingsCount - a.ratingsCount)
-      .slice(0, 12);
+      ;
     setResults(popularBooks);
     const map: Record<string, Shelf> = {};
     popularBooks.forEach(b => { map[b.id] = Shelf.WANT_TO_READ; });
@@ -35,21 +36,18 @@ const Search: React.FC = () => {
 
   const doSearch = () => {
     if (!query.trim() && selectedGenre === 'all') {
-      // Show popular books when no search criteria
       const popularBooks = completeBookList
         .sort((a, b) => b.ratingsCount - a.ratingsCount)
-        .slice(0, 20);
+        ;
       setResults(popularBooks);
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate API delay
     setTimeout(() => {
       let filteredBooks = completeBookList;
 
-      // Filter by search query
       if (query.trim()) {
         const searchTerm = query.toLowerCase();
         filteredBooks = filteredBooks.filter(book =>
@@ -60,14 +58,12 @@ const Search: React.FC = () => {
         );
       }
 
-      // Filter by genre
       if (selectedGenre !== 'all') {
         filteredBooks = filteredBooks.filter(book =>
           book.genre.includes(selectedGenre)
         );
       }
 
-      // Sort results
       switch (sortBy) {
         case 'rating':
           filteredBooks.sort((a, b) => b.averageRating - a.averageRating);
@@ -81,14 +77,10 @@ const Search: React.FC = () => {
         case 'title':
           filteredBooks.sort((a, b) => a.title.localeCompare(b.title));
           break;
-        default:
-          // Keep current order for relevance
-          break;
       }
 
-      setResults(filteredBooks.slice(0, 50)); // Limit to 50 results
+      setResults(filteredBooks);
       
-      // Default shelf selection
       const map: Record<string, Shelf> = {};
       filteredBooks.forEach(b => { map[b.id] = Shelf.WANT_TO_READ; });
       setShelfMap(map);
@@ -100,7 +92,6 @@ const Search: React.FC = () => {
   const addToShelf = (book: SampleBook) => {
     const shelfName = shelfMap[book.id].replace('_', ' ').toLowerCase();
     setMessage(`Added "${book.title}" to ${shelfName}`);
-    // In a real app, this would make an API call
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -113,42 +104,62 @@ const Search: React.FC = () => {
     setQuery('');
     setSelectedGenre('all');
     setSortBy('relevance');
-    // Show popular books
     const popularBooks = completeBookList
       .sort((a, b) => b.ratingsCount - a.ratingsCount)
-      .slice(0, 12);
+      ;
     setResults(popularBooks);
   };
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>🔍 Discover Books</h1>
-        <p>Search through our collection of {completeBookList.length}+ amazing books</p>
-      </div>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            🔍 Discover Books
+          </h1>
+          <p className="text-gray-400 text-lg">
+            Search through our collection of {completeBookList.length}+ amazing books
+          </p>
+        </div>
 
-      <div className="search-section">
-        <form onSubmit={handleSubmit} className="search-form">
-          <div className="search-row">
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search by title, author, or genre..."
-              className="search-input"
-            />
-            <button type="submit" className="search-button" disabled={isLoading}>
-              {isLoading ? '🔄' : '🔍'} Search
+        <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg p-6 mb-8 space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search by title, author, or genre..."
+                className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <SearchIcon size={16} />
+                  Search
+                </>
+              )}
             </button>
           </div>
 
-          <div className="filter-row">
-            <div className="filter-group">
-              <label>Genre:</label>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-400" />
               <select 
                 value={selectedGenre} 
                 onChange={e => setSelectedGenre(e.target.value)}
-                className="filter-select"
+                className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="all">All Genres</option>
                 {allGenres.map(genre => (
@@ -157,91 +168,100 @@ const Search: React.FC = () => {
               </select>
             </div>
 
-            <div className="filter-group">
-              <label>Sort by:</label>
-              <select 
-                value={sortBy} 
-                onChange={e => setSortBy(e.target.value)}
-                className="filter-select"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="rating">Highest Rated</option>
-                <option value="popularity">Most Popular</option>
-                <option value="newest">Newest</option>
-                <option value="title">Title A-Z</option>
-              </select>
-            </div>
+            <select 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)}
+              className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="relevance">Sort by Relevance</option>
+              <option value="rating">Highest Rated</option>
+              <option value="popularity">Most Popular</option>
+              <option value="newest">Newest First</option>
+              <option value="title">Title A-Z</option>
+            </select>
 
-            <button type="button" onClick={clearSearch} className="clear-button">
-              Clear Filters
+            <button 
+              type="button" 
+              onClick={clearSearch}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
+            >
+              <X size={16} />
+              Clear
             </button>
           </div>
         </form>
 
-        {message && <div className="message">{message}</div>}
-      </div>
-
-      <div className="results-section">
-        {isLoading && <div className="loading">Searching books...</div>}
-        
-        {!isLoading && results.length > 0 && (
-          <div className="results-header">
-            <h3>Found {results.length} books</h3>
+        {message && (
+          <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded mb-6">
+            {message}
           </div>
         )}
 
-        <div className="results">
-          {results.map(book => (
-            <div key={book.id} className="book-card">
-              <div className="book-cover">
-                <img src={book.coverUrl} alt={book.title} />
-              </div>
-              <div className="book-info">
-                <h3 className="book-title">{book.title}</h3>
-                <p className="authors">{book.author}</p>
-                <p className="book-description">{book.description.substring(0, 150)}...</p>
-                
-                <div className="book-metadata">
-                  <div className="book-rating">
-                    <span>⭐ {book.averageRating}</span>
-                    <span className="rating-count">({book.ratingsCount.toLocaleString()} ratings)</span>
-                  </div>
-                  <div className="book-details">
-                    <span>📅 {book.publishedYear}</span>
-                    <span>📄 {book.pages} pages</span>
-                  </div>
-                  <div className="book-genres">
-                    {book.genre.slice(0, 3).map((genre, index) => (
-                      <span key={index} className="genre-badge">{genre}</span>
-                    ))}
-                  </div>
-                </div>
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-white">
+            Found {results.length} books
+          </h3>
+        </div>
 
-                <div className="book-actions">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          {results.map(book => (
+            <div key={book.id} className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors group">
+              <div className="aspect-[3/4] overflow-hidden">
+                <img 
+                  src={book.coverUrl} 
+                  alt={book.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              
+              <div className="p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-white line-clamp-2 group-hover:text-blue-400 transition-colors">
+                    {book.title}
+                  </h4>
+                  <p className="text-gray-400 text-sm mt-1">{book.author}</p>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <Star className="text-yellow-400 fill-current" size={16} />
+                  <span className="text-gray-300 text-sm">{book.averageRating}</span>
+                  <span className="text-gray-500 text-sm">({book.ratingsCount.toLocaleString()})</span>
+                </div>
+                
+                <div className="flex flex-wrap gap-1">
+                  {book.genre.slice(0, 2).map(genre => (
+                    <span key={genre} className="px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                      {genre}
+                    </span>
+                  ))}
+                  {book.genre.length > 2 && (
+                    <span className="px-2 py-1 bg-gray-600 text-gray-300 text-xs rounded">
+                      +{book.genre.length - 2}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
                   <select
                     value={shelfMap[book.id] || Shelf.WANT_TO_READ}
                     onChange={e => setShelfMap(prev => ({ ...prev, [book.id]: e.target.value as Shelf }))}
-                    className="shelf-select"
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-blue-500"
                   >
                     <option value={Shelf.WANT_TO_READ}>Want to Read</option>
                     <option value={Shelf.CURRENTLY_READING}>Currently Reading</option>
-                    <option value={Shelf.COMPLETED}>Read</option>
+                    <option value={Shelf.COMPLETED}>Completed</option>
                   </select>
-                  <button onClick={() => addToShelf(book)} className="add-button">
-                    Add to Shelf
+                  <button
+                    onClick={() => addToShelf(book)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                  >
+                    Add
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-
-        {!isLoading && results.length === 0 && query && (
-          <div className="no-results">
-            <h3>No books found</h3>
-            <p>Try adjusting your search terms or filters</p>
-          </div>
-        )}
       </div>
     </div>
   );
