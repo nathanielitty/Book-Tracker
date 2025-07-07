@@ -23,41 +23,37 @@ spring:
               - "*"
             allowCredentials: true
             maxAge: 3600
-      # routes:
-      #   - id: auth-service
-      #     uri: http://${AUTH_SERVICE_HOST:localhost}:8081
-      #     predicates:
-      #       - Path=/api/v1/auth/**
-      #     filters:
-      #       - StripPrefix=0
-
-      #   - id: book-service
-      #     uri: http://${BOOK_SERVICE_HOST:localhost}:8082
-      #     predicates:
-      #       - Path=/books/**
-      #     filters:
-      #       - StripPrefix=0
-
-      #   - id: library-service
-      #     uri: http://${LIBRARY_SERVICE_HOST:localhost}:8083
-      #     predicates:
-      #       - Path=/library/**
-      #     filters:
-      #       - StripPrefix=0
-
-      #   - id: notification-service
-      #     uri: http://${NOTIFICATION_SERVICE_HOST:localhost}:8084
-      #     predicates:
-      #       - Path=/notifications/**
-      #     filters:
-      #       - StripPrefix=0
-
-      #   - id: analytics-service
-      #     uri: http://${ANALYTICS_SERVICE_HOST:localhost}:8085
-      #     predicates:
-      #       - Path=/analytics/**
-      #     filters:
-      #       - StripPrefix=0
+      routes:
+        - id: auth-service
+          uri: http://${AUTH_SERVICE_HOST:localhost}:8081
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=2
+        - id: book-service
+          uri: http://${BOOK_SERVICE_HOST:localhost}:8082
+          predicates:
+            - Path=/api/v1/books/**
+          filters:
+            - StripPrefix=2
+        - id: library-service
+          uri: http://${LIBRARY_SERVICE_HOST:localhost}:8084
+          predicates:
+            - Path=/api/v1/library/**
+          filters:
+            - StripPrefix=2
+        - id: notification-service
+          uri: http://${NOTIFICATION_SERVICE_HOST:localhost}:8085
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - StripPrefix=2
+        - id: analytics-service
+          uri: http://${ANALYTICS_SERVICE_HOST:localhost}:8086
+          predicates:
+            - Path=/api/v1/analytics/**
+          filters:
+            - StripPrefix=2
       discovery:
         locator:
           enabled: false

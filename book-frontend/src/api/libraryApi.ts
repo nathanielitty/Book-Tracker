@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { Book } from './bookApi';
 
 const libraryApi = axios.create({
   baseURL: import.meta.env.VITE_LIBRARY_SERVICE_URL || '/api/v1/library',
@@ -15,7 +14,12 @@ libraryApi.interceptors.request.use((config) => {
 
 export type ReadingStatus = 'WANT_TO_READ' | 'CURRENTLY_READING' | 'READ' | 'DNF';
 
-export interface UserBook extends Book {
+export interface UserBook {
+  // Record-level identifiers
+  id: string;
+  userId: string;
+  // Reference to actual book
+  bookId: string;
   status: ReadingStatus;
   startedAt?: string;
   finishedAt?: string;
@@ -23,6 +27,8 @@ export interface UserBook extends Book {
   totalPages?: number;
   rating?: number;
   review?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UserLibraryResponse {
@@ -38,10 +44,16 @@ export const getUserBooks = async (
   page = 0,
   size = 10
 ): Promise<UserLibraryResponse> => {
-  const response = await libraryApi.get<UserLibraryResponse>(`/users/${userId}/books`, {
+  const response = await libraryApi.get(`/users/${userId}/books`, {
     params: { status, page, size },
   });
-  return response.data;
+  const data = response.data;
+  return {
+    books: data.content,
+    totalItems: data.totalElements,
+    currentPage: data.number,
+    totalPages: data.totalPages,
+  };
 };
 
 export const addBookToLibrary = async (
@@ -97,5 +109,3 @@ export const addReviewAndRating = async (
   );
   return response.data;
 };
-
-export default libraryApi;

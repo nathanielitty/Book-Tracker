@@ -4,6 +4,9 @@ import { BookCarousel } from '../components/BookCarousel';
 import { StatsCard } from '../components/StatsCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { Book, BookOpen, Target, Star, TrendingUp, Clock } from 'lucide-react';
+import { useLibrary } from '../hooks/useLibrary';
+import { useAuth } from '../hooks/useAuth';
+import { UserBook } from '../api/libraryApi';
 
 interface DashboardStats {
   totalBooks: number;
@@ -18,6 +21,10 @@ interface DashboardStats {
 }
 
 const Dashboard: React.FC = () => {
+  const { userId } = useAuth();
+  const { getUserBooks } = useLibrary();
+  const [userBooks, setUserBooks] = useState<UserBook[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalBooks: 0,
     readBooks: 0,
@@ -38,19 +45,69 @@ const Dashboard: React.FC = () => {
     .slice(0, 50);
 
   useEffect(() => {
-    const mockStats: DashboardStats = {
-      totalBooks: 127,
-      readBooks: 89,
-      currentlyReading: 5,
-      wantToRead: 33,
-      averageRating: 4.2,
-      totalPages: 28457,
-      favoriteGenres: ['Fantasy', 'Science Fiction', 'Historical Fiction', 'Mystery'],
-      readingGoal: 50,
-      readingProgress: 89
+    const fetchUserBooks = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await getUserBooks(undefined, 0, 100); // Get all books
+        if (response) {
+          setUserBooks(response.books);
+          
+          // Calculate stats from real data
+          const readBooks = response.books.filter(book => book.status === 'READ').length;
+          const currentlyReading = response.books.filter(book => book.status === 'CURRENTLY_READING').length;
+          const wantToRead = response.books.filter(book => book.status === 'WANT_TO_READ').length;
+          const totalBooks = response.books.length;
+          
+          // Calculate average rating
+          const booksWithRating = response.books.filter(book => book.rating && book.rating > 0);
+          const averageRating = booksWithRating.length > 0 
+            ? booksWithRating.reduce((sum, book) => sum + (book.rating || 0), 0) / booksWithRating.length
+            : 0;
+          
+          // Calculate total pages
+          const totalPages = response.books.reduce((sum, book) => sum + (book.totalPages || 0), 0);
+          
+          const calculatedStats: DashboardStats = {
+            totalBooks,
+            readBooks,
+            currentlyReading,
+            wantToRead,
+            averageRating: Math.round(averageRating * 10) / 10,
+            totalPages,
+            favoriteGenres: ['Fantasy', 'Science Fiction', 'Fiction'], // TODO: Calculate from real data
+            readingGoal: 50,
+            readingProgress: readBooks
+          };
+          
+          setStats(calculatedStats);
+        }
+      } catch (error) {
+        console.error('Error fetching user books:', error);
+        // Fall back to mock data if API fails
+        const mockStats: DashboardStats = {
+          totalBooks: 0,
+          readBooks: 0,
+          currentlyReading: 0,
+          wantToRead: 0,
+          averageRating: 0,
+          totalPages: 0,
+          favoriteGenres: [],
+          readingGoal: 50,
+          readingProgress: 0
+        };
+        setStats(mockStats);
+      } finally {
+        setLoading(false);
+      }
     };
-    setStats(mockStats);
-  }, []);
+
+    fetchUserBooks();
+  }, [userId, getUserBooks]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

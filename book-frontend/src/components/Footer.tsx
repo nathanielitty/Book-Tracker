@@ -69,15 +69,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         
-        {/* Bottom Section */}
-        <div className="border-t border-gray-700 mt-8 pt-8 text-center space-y-2">
-          <p className="text-gray-400">
-            © 2025 BookTracker. Built with ❤️ by Nathaniel
-          </p>
-          <p className="text-sm text-gray-500">
-            A full-stack portfolio project showcasing modern web development
-          </p>
-        </div>
+        {/* Bottom Section - removed attribution as per user request */}
       </div>
     </footer>
   );

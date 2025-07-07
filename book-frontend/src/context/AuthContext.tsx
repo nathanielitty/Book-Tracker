@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  bypassLogin: (userId: string, username: string) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -20,6 +21,7 @@ export const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   logout: () => {},
   isAuthenticated: false,
+  bypassLogin: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -85,6 +87,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate('/');
   };
 
+  const bypassLogin = (userId: string, username: string) => {
+    const mockToken = 'test-token-123';
+    setToken(mockToken);
+    setUserId(userId);
+    setUsername(username);
+    navigate('/dashboard');
+  };
+
   return (
     <AuthContext.Provider value={{
       token,
@@ -93,7 +103,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login,
       register,
       logout,
-      isAuthenticated: !!token
+      isAuthenticated: !!token,
+      bypassLogin
     }}>
       {children}
     </AuthContext.Provider>

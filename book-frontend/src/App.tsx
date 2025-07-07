@@ -12,7 +12,6 @@ import Search from './pages/Search'
 import Shelf from './pages/Shelf'
 import Dashboard from './pages/Dashboard'
 import BypassPage from './pages/BypassPage'
-import BookDetails from './pages/BookDetails'
 import './App.css'
 
 function App() {
@@ -20,9 +19,9 @@ function App() {
     <ThemeProvider defaultTheme="dark" storageKey="booktracker-theme">
       <Router>
         <AuthProvider>
-          <div className="app-container min-h-screen bg-gray-900 text-white">
+          <div className="app-container flex flex-col min-h-screen bg-gray-900 text-white">
             <NavBar />
-            <main className="main-content">
+            <main className="main-content flex-grow">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
@@ -31,7 +30,6 @@ function App() {
                 <Route path="/search" element={<PrivateRoute><Search /></PrivateRoute>} />
                 <Route path="/shelf/:shelf" element={<PrivateRoute><Shelf /></PrivateRoute>} />
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                <Route path="/book/:id" element={<BookDetails />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </main>

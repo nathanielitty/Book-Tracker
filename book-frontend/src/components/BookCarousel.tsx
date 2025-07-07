@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ChevronLeft, ChevronRight, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "../hooks/useAuth"
+import { useLibrary } from "../hooks/useLibrary"
 
 type BookLike = {
   id: string;
@@ -25,6 +27,18 @@ export function BookCarousel({ books, title, className = "" }: BookCarouselProps
   const [startIndex, setStartIndex] = useState(0)
   const visibleBooks = 5
   const navigate = useNavigate()
+  const { addBookToLibrary, getUserBooks } = useLibrary()
+  const { userId } = useAuth()
+  const [libraryIds, setLibraryIds] = useState<string[]>([])
+
+  // Load existing library entries
+  useEffect(() => {
+    if (userId) {
+      getUserBooks(undefined, 0, 100)?.then(resp => {
+        if (resp) setLibraryIds(resp.books.map(entry => entry.bookId))
+      })
+    }
+  }, [userId, getUserBooks])
 
   const handlePrevious = () => {
     setStartIndex(Math.max(0, startIndex - 1))
@@ -38,10 +52,18 @@ export function BookCarousel({ books, title, className = "" }: BookCarouselProps
     navigate(`/book/${bookId}`)
   }
 
-  const handleAddToList = (bookId: string) => {
-    console.log(`Adding book ${bookId} to list`)
-    // TODO: Implement actual add to list functionality
-    alert(`Added "${books.find(b => b.id === bookId)?.title}" to your list!`)
+  const handleAddToList = async (bookId: string) => {
+    try {
+      const added = await addBookToLibrary(bookId, 'WANT_TO_READ')
+      if (added) {
+        setLibraryIds(prev => [...prev, bookId])
+        const bookTitle = books.find(b => b.id === bookId)?.title || 'Book'
+        alert(`Added "${bookTitle}" to your Want to Read list!`)
+      }
+    } catch (error) {
+      console.error('Failed to add book to library:', error)
+      alert('Failed to add book to your library. Please try again.')
+    }
   }
 
   return (
@@ -89,13 +111,19 @@ export function BookCarousel({ books, title, className = "" }: BookCarouselProps
                   >
                     View Details
                   </Button>
-                  <Button 
-                    onClick={() => handleAddToList(book.id)}
-                    variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-gray-900"
-                  >
-                    Add to List
-                  </Button>
+                  {libraryIds.includes(book.id) ? (
+                    <Button disabled variant="outline" className="border-gray-500 text-gray-500">
+                      In List
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => handleAddToList(book.id)}
+                      variant="outline"
+                      className="border-white text-white hover:bg-white hover:text-gray-900"
+                    >
+                      Add to List
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

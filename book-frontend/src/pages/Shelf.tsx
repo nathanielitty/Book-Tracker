@@ -1,172 +1,102 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../api/index';
-import { UserBook, RateRequest } from '../types';
 import { AuthContext } from '../context/AuthContext';
-import { Book, Star, Calendar, Loader2 } from 'lucide-react';
+import { getUserBooks, addReviewAndRating, UserBook, ReadingStatus } from '../api/libraryApi';
+import { getBookById, Book as APIBook } from '../api/bookApi';
+
+// Combined library entry with book details
+interface EnrichedBook extends UserBook, APIBook {
+  libraryEntryId: string;
+}
 
 const Shelf: React.FC = () => {
   const { shelf } = useParams<{ shelf: string }>();
-  const { userId } = useContext(AuthContext);
-  const [books, setBooks] = useState<UserBook[]>([]);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchShelf = async () => {
-    if (!shelf || !userId) return;
-    
-    setIsLoading(true);
-    try {
-      // Map frontend shelf names to backend ReadingStatus enum
-      const statusMap: { [key: string]: string } = {
-        'reading': 'CURRENTLY_READING',
-        'read': 'READ',
-        'want-to-read': 'WANT_TO_READ',
-        'dnf': 'DNF'
-      };
-      
-      const status = statusMap[shelf.toLowerCase()] || shelf.toUpperCase();
-      const res = await api.get<{content: UserBook[]}>(`/api/v1/library/users/${userId}/books?status=${status}`);
-      setBooks(res.data.content || []);
-      setError('');
-    } catch (err) {
-      console.error('Failed to load shelf:', err);
-      setError('Failed to load shelf');
-      setBooks([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { userId, username } = useContext(AuthContext);
+  const [books, setBooks] = useState<EnrichedBook[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (shelf && userId) fetchShelf();
-  }, [shelf, userId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!userId || !shelf) return;
+    const loadShelf = async () => {
+      setLoading(true);
+      try {
+        const map: Record<string, ReadingStatus> = {
+          'want-to-read': 'WANT_TO_READ',
+          reading: 'CURRENTLY_READING',
+          read: 'READ',
+          dnf: 'DNF',
+        };
+        const status = map[shelf.toLowerCase()] ?? (shelf.toUpperCase() as ReadingStatus);
+        const resp = await getUserBooks(userId, status, 0, 100);
+        const enriched = await Promise.all(resp.books.map(async entry => {
+          try {
+            const details: APIBook = await getBookById(entry.bookId);
+            return { libraryEntryId: entry.id, ...entry, ...details } as EnrichedBook;
+          } catch {
+            return { libraryEntryId: entry.id, ...entry } as EnrichedBook;
+          }
+        }));
+        setBooks(enriched);
+      } catch (err) {
+        console.error('Shelf load error', err);
+        setBooks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadShelf();
+  }, [userId, shelf]);
 
-  const handleRate = async (bookId: string, rating: number) => {
+  const handleRate = async (entryId: string, bookId: string, rating: number) => {
     try {
-      const request: RateRequest = { userBookId: bookId, rating };
-      const res = await api.post<UserBook>('/library/rate', request);
-      setBooks(prev => prev.map(b => b.id === bookId ? res.data : b));
-      setMessage(`Rated "${res.data.title}": ${rating} stars`);
-      setTimeout(() => setMessage(''), 3000);
+      const updated = await addReviewAndRating(userId!, bookId, rating);
+      setBooks(prev => prev.map(b => b.libraryEntryId === entryId ? { ...b, rating: updated.rating } : b));
     } catch (err) {
-      console.error('Failed to rate book:', err);
-      setError('Failed to rate book');
-      setTimeout(() => setError(''), 3000);
+      console.error('Rating error:', err);
     }
   };
 
-  const formatShelfName = (shelfStr: string) => {
-    return shelfStr.replace(/_/g, ' ').toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="flex items-center space-x-3 text-white">
-          <Loader2 className="animate-spin" size={24} />
-          <span className="text-lg">Loading books...</span>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div>Loading shelf...</div>;
+  if (!loading && books.length === 0) return (
+    <div className="p-4">
+      <p className="text-gray-400">No books in this shelf yet.</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            {shelf ? formatShelfName(shelf) : 'My Shelf'}
-          </h1>
-          <p className="text-gray-400">
-            {books.length > 0 ? `${books.length} book${books.length !== 1 ? 's' : ''}` : 'No books yet'}
-          </p>
-        </div>
-
-        {/* Messages */}
-        {error && (
-          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded mb-6">
-            {error}
-          </div>
-        )}
-        {message && (
-          <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded mb-6">
-            {message}
-          </div>
-        )}
-        
-        {/* Books Grid */}
-        {books.length === 0 && !isLoading ? (
-          <div className="text-center py-16">
-            <Book className="mx-auto text-gray-600 mb-4" size={64} />
-            <p className="text-gray-400 text-lg">No books on this shelf yet.</p>
-            <p className="text-gray-500 mt-2">Start adding books to build your library!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {books.map(book => (
-              <div key={book.id} className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-blue-500 transition-colors group">
-                {book.thumbnailUrl && (
-                  <div className="aspect-[3/4] overflow-hidden">
-                    <img 
-                      src={book.thumbnailUrl} 
-                      alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-                
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-white text-lg line-clamp-2">
-                      {book.title}
-                    </h3>
-                    {book.author && (
-                      <p className="text-gray-400 text-sm mt-1">{book.author}</p>
-                    )}
-                  </div>
-                  
-                  {book.description && (
-                    <p className="text-gray-300 text-sm line-clamp-3">
-                      {book.description}
-                    </p>
-                  )}
-                  
-                  {/* Rating */}
-                  <div className="flex items-center space-x-2">
-                    <Star className="text-yellow-400" size={16} />
-                    <select
-                      value={book.rating || 0}
-                      onChange={e => handleRate(book.id, Number(e.target.value))}
-                      className="bg-gray-700 text-white text-sm rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
-                    >
-                      <option value={0}>Rate this book</option>
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <option key={n} value={n}>
-                          {n} star{n !== 1 ? 's' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* Date Added */}
-                  {book.addedAt && (
-                    <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                      <Calendar size={14} />
-                      <span>Added: {new Date(book.addedAt).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+    <div className="p-4">
+      <h2>{username}'s {shelf?.replace(/-/g,' ')?.toUpperCase()} Shelf</h2>
+      <table className="min-w-full mt-4 border-collapse">
+        <thead>
+          <tr className="border-b">
+            <th className="px-2 py-1">Cover</th>
+            <th className="px-2 py-1">Title</th>
+            <th className="px-2 py-1">Author</th>
+            <th className="px-2 py-1">Status</th>
+            <th className="px-2 py-1">Added</th>
+            <th className="px-2 py-1">Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          {books.map(b => (
+            <tr key={b.libraryEntryId} className="border-b hover:bg-gray-100">
+              <td className="px-2 py-1">
+                {b.coverImage ? <img src={b.coverImage} alt={b.title} className="w-12 h-16 object-cover"/> : '-'}
+              </td>
+              <td className="px-2 py-1">{b.title}</td>
+              <td className="px-2 py-1">{b.author}</td>
+              <td className="px-2 py-1">{b.status.replace('_',' ').toLowerCase()}</td>
+              <td className="px-2 py-1">{b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '-'}</td>
+              <td className="px-2 py-1">
+                <select value={b.rating||0} onChange={e=>handleRate(b.libraryEntryId, b.bookId, +e.target.value)}>
+                  <option value={0}>-</option>
+                  {[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}
+                </select>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

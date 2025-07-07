@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ArrowLeft } from 'lucide-react';
+import { BookOpen, ArrowLeft, User } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const BypassPage: React.FC = () => {
+  const { bypassLogin } = useContext(AuthContext);
+
+  const loginAsTestUser = () => {
+    // Use the bypassLogin function from context
+    bypassLogin('test-user', 'TestUser');
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="max-w-md w-full text-center space-y-6">
@@ -18,6 +26,14 @@ const BypassPage: React.FC = () => {
         </p>
         
         <div className="space-y-4">
+          <button 
+            onClick={loginAsTestUser}
+            className="flex items-center justify-center w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:from-green-700 hover:to-blue-700 transition-all duration-200"
+          >
+            <User size={16} className="mr-2" />
+            Login as Test User
+          </button>
+          
           <Link 
             to="/dashboard" 
             className="block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200"

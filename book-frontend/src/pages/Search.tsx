@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { completeBookList, SampleBook } from '../data/sampleBooks';
 import { Shelf } from '../types';
 import { Search as SearchIcon, Filter, X, Star } from 'lucide-react';
+import { addBookToLibrary, ReadingStatus } from '../api/libraryApi';
+import { AuthContext } from '../context/AuthContext';
 
 const Search: React.FC = () => {
+  const { userId } = useContext(AuthContext);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SampleBook[]>([]);
   const [shelfMap, setShelfMap] = useState<Record<string, Shelf>>({});
@@ -89,10 +92,25 @@ const Search: React.FC = () => {
     }, 500);
   };
 
-  const addToShelf = (book: SampleBook) => {
-    const shelfName = shelfMap[book.id].replace('_', ' ').toLowerCase();
-    setMessage(`Added "${book.title}" to ${shelfName}`);
-    setTimeout(() => setMessage(''), 3000);
+  const addToShelf = async (book: SampleBook) => {
+    if (!userId) {
+      setMessage('Please log in to add books to your library');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    try {
+      const key = shelfMap[book.id] || Shelf.WANT_TO_READ;
+      const status: ReadingStatus = key === Shelf.COMPLETED ? 'READ' : key as ReadingStatus;
+      await addBookToLibrary(userId, book.id, status);
+      const shelfName = status.replace('_', ' ').toLowerCase();
+      setMessage(`Added "${book.title}" to ${shelfName}`);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error adding book to library:', error);
+      setMessage('Failed to add book to library');
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -249,7 +267,7 @@ const Search: React.FC = () => {
                   >
                     <option value={Shelf.WANT_TO_READ}>Want to Read</option>
                     <option value={Shelf.CURRENTLY_READING}>Currently Reading</option>
-                    <option value={Shelf.COMPLETED}>Completed</option>
+                    <option value={Shelf.COMPLETED}>Read</option>
                   </select>
                   <button
                     onClick={() => addToShelf(book)}

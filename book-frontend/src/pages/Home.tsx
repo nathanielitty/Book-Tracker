@@ -1,5 +1,5 @@
 import { BookOpen, Target, Search, Smartphone, TrendingUp, Users, Shield, Sparkles } from "lucide-react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 
 export default function Home() {
@@ -16,7 +16,7 @@ export default function Home() {
               </h1>
               <p className="text-2xl text-gray-300 mb-6">Track, rate, and discover your next favorite book</p>
               <p className="text-lg text-gray-400 mb-8 leading-relaxed">
-                A modern, MyAnimeList-inspired book tracking application that helps you organize your reading life. Keep
+                A modern book tracking application that helps you organize your reading life. Keep
                 track of books you've read, want to read, and are currently reading. Get personalized recommendations
                 and discover new books tailored to your taste.
               </p>
@@ -25,7 +25,7 @@ export default function Home() {
                   asChild
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 h-auto font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  <Link href="/register">
+                  <Link to="/register">
                     <Sparkles className="mr-2 h-5 w-5" />
                     Get Started
                   </Link>
@@ -35,7 +35,7 @@ export default function Home() {
                   variant="outline"
                   className="bg-gray-800 text-white border-gray-700 px-8 py-6 h-auto font-semibold rounded-lg hover:bg-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  <Link href="/login">
+                  <Link to="/login">
                     <BookOpen className="mr-2 h-5 w-5" />
                     Login
                   </Link>
@@ -171,7 +171,7 @@ export default function Home() {
             asChild
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-7 h-auto font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-lg"
           >
-            <Link href="/register">
+            <Link to="/register">
               <Sparkles className="mr-3 h-6 w-6" />
               Sign Up Now
             </Link>
