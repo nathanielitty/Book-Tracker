@@ -33,7 +33,10 @@ export function useLibrary() {
 
   const addBookToLibrary = useCallback(
     async (bookId: string, status: libraryApi.ReadingStatus) => {
+      console.log('🟢 [useLibrary] addBookToLibrary called with:', { bookId, status, userId })
+      
       if (!userId) {
+        console.log('🔴 [useLibrary] No userId, navigating to login')
         navigate('/login');
         return null;
       }
@@ -41,9 +44,12 @@ export function useLibrary() {
       try {
         setLoading(true);
         setError(null);
+        console.log('🟢 [useLibrary] Calling libraryApi.addBookToLibrary...')
         const response = await libraryApi.addBookToLibrary(userId, bookId, status);
+        console.log('🟢 [useLibrary] libraryApi.addBookToLibrary response:', response)
         return response;
       } catch (err) {
+        console.error('🔴 [useLibrary] Error in addBookToLibrary:', err)
         setError(err as Error);
         return null;
       } finally {

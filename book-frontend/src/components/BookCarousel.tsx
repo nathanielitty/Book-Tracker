@@ -53,15 +53,26 @@ export function BookCarousel({ books, title, className = "" }: BookCarouselProps
   }
 
   const handleAddToList = async (bookId: string) => {
+    console.log('🔵 [BookCarousel] handleAddToList called with bookId:', bookId)
+    console.log('🔵 [BookCarousel] Current userId:', userId)
+    console.log('🔵 [BookCarousel] Current libraryIds:', libraryIds)
+    
     try {
+      console.log('🔵 [BookCarousel] Calling addBookToLibrary...')
       const added = await addBookToLibrary(bookId, 'WANT_TO_READ')
+      console.log('🔵 [BookCarousel] addBookToLibrary response:', added)
+      
       if (added) {
+        console.log('🔵 [BookCarousel] Book added successfully, updating libraryIds')
         setLibraryIds(prev => [...prev, bookId])
         const bookTitle = books.find(b => b.id === bookId)?.title || 'Book'
+        console.log('🔵 [BookCarousel] Showing success alert for:', bookTitle)
         alert(`Added "${bookTitle}" to your Want to Read list!`)
+      } else {
+        console.log('🔵 [BookCarousel] addBookToLibrary returned false/null')
       }
     } catch (error) {
-      console.error('Failed to add book to library:', error)
+      console.error('🔴 [BookCarousel] Failed to add book to library:', error)
       alert('Failed to add book to your library. Please try again.')
     }
   }

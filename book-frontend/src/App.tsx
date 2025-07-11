@@ -11,7 +11,6 @@ import Register from './pages/Register'
 import Search from './pages/Search'
 import Shelf from './pages/Shelf'
 import Dashboard from './pages/Dashboard'
-import BypassPage from './pages/BypassPage'
 import './App.css'
 
 function App() {
@@ -26,7 +25,6 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/bypass" element={<BypassPage />} />
                 <Route path="/search" element={<PrivateRoute><Search /></PrivateRoute>} />
                 <Route path="/shelf/:shelf" element={<PrivateRoute><Shelf /></PrivateRoute>} />
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

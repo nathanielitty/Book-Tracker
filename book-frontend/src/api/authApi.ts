@@ -50,7 +50,7 @@ export const validateToken = async (): Promise<boolean> => {
     
     await authApi.get(`/validate?token=${token}`);
     return true;
-  } catch {
+  } catch (error) {
     // Clear invalid token
     localStorage.removeItem('token');
     localStorage.removeItem('userId');

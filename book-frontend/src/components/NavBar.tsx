@@ -67,7 +67,7 @@ const NavBar: React.FC = () => {
               </Link>
               
               <Link 
-                to="/shelf/reading" 
+                to="/shelf/want-to-read" 
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isShelfActive() 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' 
@@ -167,7 +167,7 @@ const NavBar: React.FC = () => {
                   Search
                 </Link>
                 <Link 
-                  to="/shelf/reading" 
+                  to="/shelf/want-to-read" 
                   className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors ${
                     isShelfActive() 
                       ? 'bg-blue-600 text-white' 

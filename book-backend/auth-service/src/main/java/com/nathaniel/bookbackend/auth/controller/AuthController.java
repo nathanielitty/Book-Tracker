@@ -92,8 +92,14 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<?> validateToken(@RequestParam String token) {
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
         try {
+            // Extract token from "Bearer <token>" format
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid Authorization header");
+            }
+            
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
             jwtService.validateToken(token);
             return ResponseEntity.ok().build();
         } catch (Exception e) {

@@ -31,6 +31,9 @@ spring:
         order_inserts: true
         order_updates: true
         generate_statistics: false
+  sql:
+    init:
+      mode: never
         
   batch:
     job:

@@ -24,17 +24,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             String path = exchange.getRequest().getURI().getPath();
             String method = exchange.getRequest().getMethod().name();
             
-            // Handle OPTIONS requests (CORS preflight) without forwarding to backend
-            if ("OPTIONS".equals(method)) {
-                exchange.getResponse().setStatusCode(HttpStatus.OK);
-                exchange.getResponse().getHeaders().add("Access-Control-Allow-Origin", "http://localhost:5173");
-                exchange.getResponse().getHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                exchange.getResponse().getHeaders().add("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
-                exchange.getResponse().getHeaders().add("Access-Control-Allow-Credentials", "true");
-                exchange.getResponse().getHeaders().add("Access-Control-Max-Age", "3600");
-                return exchange.getResponse().setComplete();
-            }
-            
             // Skip authentication for public endpoints
             if (isPublicEndpoint(path)) {
                 return chain.filter(exchange);
@@ -51,13 +40,17 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             if (parts.length != 2 || !"Bearer".equals(parts[0])) {
                 return Mono.error(new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect authorization structure"));
             }
-
-            return webClient
-                    .get()
-                    .uri("http://auth-service:8081/api/v1/auth/validate?token=" + parts[1])
-                    .retrieve().bodyToMono(Void.class)
+            
+            // Validate token by calling auth service
+            return webClient.get()
+                    .uri("http://auth-service:8081/api/v1/auth/validate")
+                    .header(HttpHeaders.AUTHORIZATION, authHeader)
+                    .retrieve()
+                    .bodyToMono(String.class)
                     .then(chain.filter(exchange))
-                    .onErrorResume(e -> Mono.error(new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authorized")));
+                    .onErrorResume(throwable -> 
+                        Mono.error(new org.springframework.web.server.ResponseStatusException(
+                            HttpStatus.UNAUTHORIZED, "Invalid or expired token")));
         };
     }
     

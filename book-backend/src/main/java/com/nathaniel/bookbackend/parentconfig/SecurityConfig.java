@@ -1,4 +1,4 @@
-package com.nathaniel.bookbackend.config;
+package com.nathaniel.bookbackend.parentconfig;
 
 import com.nathaniel.bookbackend.security.JwtAuthorizationFilter;
 import com.nathaniel.bookbackend.security.AppUserDetailsService;

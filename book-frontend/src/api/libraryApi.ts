@@ -8,9 +8,29 @@ libraryApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('🔍 [libraryApi] Request interceptor - Token:', token.substring(0, 50) + '...');
+    console.log('🔍 [libraryApi] Request interceptor - URL:', config.url);
+    console.log('🔍 [libraryApi] Request interceptor - Method:', config.method);
+    console.log('🔍 [libraryApi] Request interceptor - Headers:', config.headers);
+  } else {
+    console.log('🔍 [libraryApi] Request interceptor - No token found');
   }
   return config;
 });
+
+libraryApi.interceptors.response.use(
+  (response) => {
+    console.log('🔍 [libraryApi] Response interceptor - Status:', response.status);
+    console.log('🔍 [libraryApi] Response interceptor - Data:', response.data);
+    return response;
+  },
+  (error) => {
+    console.log('🔍 [libraryApi] Response interceptor - Error status:', error.response?.status);
+    console.log('🔍 [libraryApi] Response interceptor - Error data:', error.response?.data);
+    console.log('🔍 [libraryApi] Response interceptor - Error headers:', error.response?.headers);
+    return Promise.reject(error);
+  }
+);
 
 export type ReadingStatus = 'WANT_TO_READ' | 'CURRENTLY_READING' | 'READ' | 'DNF';
 
@@ -44,16 +64,29 @@ export const getUserBooks = async (
   page = 0,
   size = 10
 ): Promise<UserLibraryResponse> => {
-  const response = await libraryApi.get(`/users/${userId}/books`, {
-    params: { status, page, size },
-  });
-  const data = response.data;
-  return {
-    books: data.content,
-    totalItems: data.totalElements,
-    currentPage: data.number,
-    totalPages: data.totalPages,
-  };
+  try {
+    const response = await libraryApi.get(`/users/${userId}/books`, {
+      params: { status, page, size },
+    });
+    const data = response.data;
+    return {
+      books: data.content,
+      totalItems: data.totalElements,
+      currentPage: data.number,
+      totalPages: data.totalPages,
+    };
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      (error as { response?: { status?: number } }).response &&
+      (((error as { response?: { status?: number } }).response?.status === 401) || ((error as { response?: { status?: number } }).response?.status === 403))
+    ) {
+      throw new Error('You are not authorized. Please log in again.');
+    }
+    throw new Error('Failed to fetch user books.');
+  }
 };
 
 export const addBookToLibrary = async (
@@ -61,12 +94,27 @@ export const addBookToLibrary = async (
   bookId: string,
   status: ReadingStatus
 ): Promise<UserBook> => {
-  const response = await libraryApi.post<UserBook>(
-    `/users/${userId}/books/${bookId}`,
-    null,
-    { params: { status } }
-  );
-  return response.data;
+  try {
+    console.log('🟡 [libraryApi] addBookToLibrary called with:', { userId, bookId, status })
+    const response = await libraryApi.post<UserBook>(
+      `/users/${userId}/books/${bookId}`,
+      null,
+      { params: { status } }
+    );
+    console.log('🟡 [libraryApi] addBookToLibrary response:', response.data)
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      (error as { response?: { status?: number } }).response &&
+      (((error as { response?: { status?: number } }).response?.status === 401) || ((error as { response?: { status?: number } }).response?.status === 403))
+    ) {
+      throw new Error('You are not authorized to add this book. Please log in again.');
+    }
+    throw new Error('Failed to add book to library.');
+  }
 };
 
 export const updateBookStatus = async (
@@ -74,12 +122,25 @@ export const updateBookStatus = async (
   bookId: string,
   status: ReadingStatus
 ): Promise<UserBook> => {
-  const response = await libraryApi.put<UserBook>(
-    `/users/${userId}/books/${bookId}/status`,
-    null,
-    { params: { status } }
-  );
-  return response.data;
+  try {
+    const response = await libraryApi.put<UserBook>(
+      `/users/${userId}/books/${bookId}/status`,
+      null,
+      { params: { status } }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      (error as { response?: { status?: number } }).response &&
+      (((error as { response?: { status?: number } }).response?.status === 401) || ((error as { response?: { status?: number } }).response?.status === 403))
+    ) {
+      throw new Error('You are not authorized to update this book. Please log in again.');
+    }
+    throw new Error('Failed to update book status.');
+  }
 };
 
 export const updateReadingProgress = async (
@@ -88,12 +149,25 @@ export const updateReadingProgress = async (
   currentPage: number,
   totalPages: number
 ): Promise<UserBook> => {
-  const response = await libraryApi.put<UserBook>(
-    `/users/${userId}/books/${bookId}/progress`,
-    null,
-    { params: { currentPage, totalPages } }
-  );
-  return response.data;
+  try {
+    const response = await libraryApi.put<UserBook>(
+      `/users/${userId}/books/${bookId}/progress`,
+      null,
+      { params: { currentPage, totalPages } }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      (error as { response?: { status?: number } }).response &&
+      (((error as { response?: { status?: number } }).response?.status === 401) || ((error as { response?: { status?: number } }).response?.status === 403))
+    ) {
+      throw new Error('You are not authorized to update progress. Please log in again.');
+    }
+    throw new Error('Failed to update reading progress.');
+  }
 };
 
 export const addReviewAndRating = async (
@@ -102,10 +176,23 @@ export const addReviewAndRating = async (
   rating: number,
   review?: string
 ): Promise<UserBook> => {
-  const response = await libraryApi.put<UserBook>(
-    `/users/${userId}/books/${bookId}/review`,
-    null,
-    { params: { rating, review } }
-  );
-  return response.data;
+  try {
+    const response = await libraryApi.put<UserBook>(
+      `/users/${userId}/books/${bookId}/review`,
+      null,
+      { params: { rating, review } }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      (error as { response?: { status?: number } }).response &&
+      (((error as { response?: { status?: number } }).response?.status === 401) || ((error as { response?: { status?: number } }).response?.status === 403))
+    ) {
+      throw new Error('You are not authorized to add a review. Please log in again.');
+    }
+    throw new Error('Failed to add review and rating.');
+  }
 };

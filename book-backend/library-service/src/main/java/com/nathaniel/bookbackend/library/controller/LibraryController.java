@@ -8,10 +8,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/library")
 public class LibraryController {
+
+    private static final Logger logger = LoggerFactory.getLogger(LibraryController.class);
 
     @Autowired
     private LibraryService libraryService;
@@ -20,7 +24,13 @@ public class LibraryController {
     public ResponseEntity<Page<UserBook>> getUserBooks(
             @PathVariable String userId,
             @RequestParam(required = false) ReadingStatus status,
-            Pageable pageable) {
+            Pageable pageable,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String tokenUserId = extractUserIdFromToken(authHeader);
+        logger.info("[getUserBooks] Path userId: {} | Token userId: {} | Status: {}", userId, tokenUserId, status);
+        if (tokenUserId == null) {
+            logger.warn("[getUserBooks] No userId extracted from token. authHeader: {}", authHeader);
+        }
         if (status != null) {
             return ResponseEntity.ok(libraryService.getUserBooksByStatus(userId, status, pageable));
         }
@@ -31,7 +41,15 @@ public class LibraryController {
     public ResponseEntity<UserBook> addBookToLibrary(
             @PathVariable String userId,
             @PathVariable String bookId,
-            @RequestParam ReadingStatus status) {
+            @RequestParam ReadingStatus status,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        // Validate that the user can only access their own library
+        String tokenUserId = extractUserIdFromToken(authHeader);
+        if (tokenUserId == null || !tokenUserId.equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        
         return ResponseEntity.ok(libraryService.addBookToLibrary(userId, bookId, status));
     }
 
@@ -39,7 +57,15 @@ public class LibraryController {
     public ResponseEntity<UserBook> updateReadingStatus(
             @PathVariable String userId,
             @PathVariable String bookId,
-            @RequestParam ReadingStatus status) {
+            @RequestParam ReadingStatus status,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        // Validate that the user can only access their own library
+        String tokenUserId = extractUserIdFromToken(authHeader);
+        if (tokenUserId == null || !tokenUserId.equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        
         return libraryService.updateReadingStatus(userId, bookId, status)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -50,7 +76,15 @@ public class LibraryController {
             @PathVariable String userId,
             @PathVariable String bookId,
             @RequestParam Integer currentPage,
-            @RequestParam Integer totalPages) {
+            @RequestParam Integer totalPages,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        // Validate that the user can only access their own library
+        String tokenUserId = extractUserIdFromToken(authHeader);
+        if (tokenUserId == null || !tokenUserId.equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        
         return libraryService.updateReadingProgress(userId, bookId, currentPage, totalPages)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -61,7 +95,15 @@ public class LibraryController {
             @PathVariable String userId,
             @PathVariable String bookId,
             @RequestParam(required = false) String review,
-            @RequestParam(required = false) Double rating) {
+            @RequestParam(required = false) Double rating,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        // Validate that the user can only access their own library
+        String tokenUserId = extractUserIdFromToken(authHeader);
+        if (tokenUserId == null || !tokenUserId.equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        
         return libraryService.addReviewAndRating(userId, bookId, review, rating)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -70,7 +112,15 @@ public class LibraryController {
     @DeleteMapping("/users/{userId}/books/{bookId}")
     public ResponseEntity<Void> removeBookFromLibrary(
             @PathVariable String userId,
-            @PathVariable String bookId) {
+            @PathVariable String bookId,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        // Validate that the user can only access their own library
+        String tokenUserId = extractUserIdFromToken(authHeader);
+        if (tokenUserId == null || !tokenUserId.equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        
         libraryService.removeBookFromLibrary(userId, bookId);
         return ResponseEntity.ok().build();
     }
@@ -81,11 +131,10 @@ public class LibraryController {
             @PathVariable String shelf,
             @RequestHeader("Authorization") String authHeader,
             Pageable pageable) {
-        // Extract user ID from token (you'll need to implement this)
-        // For now, return empty list or implement user extraction
+        // Extract user ID from token
         String userId = extractUserIdFromToken(authHeader);
         if (userId == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(401).build();
         }
 
         try {
@@ -99,19 +148,12 @@ public class LibraryController {
     private String extractUserIdFromToken(String authHeader) {
         // Extract token from Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            logger.warn("[extractUserIdFromToken] Invalid or missing Authorization header: {}", authHeader);
             return null;
         }
         
         String token = authHeader.substring(7);
         
-        // For now, just decode the token without validation
-        // In production, you'd want to validate with auth service
-        return decodeTokenSubject(token);
-    }
-    
-    private String decodeTokenSubject(String token) {
-        // Simple base64 decoding of JWT payload (not secure, for demo purposes)
-        // In production, use proper JWT library
         try {
             String[] parts = token.split("\\.");
             if (parts.length == 3) {
@@ -124,18 +166,21 @@ public class LibraryController {
                 
                 byte[] decoded = java.util.Base64.getDecoder().decode(payload);
                 String json = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+                logger.info("[extractUserIdFromToken] JWT payload: {}", json);
                 
                 // Extract subject from JSON (simple approach)
                 if (json.contains("\"sub\":")) {
                     int start = json.indexOf("\"sub\":\"") + 7;
                     int end = json.indexOf("\"", start);
                     if (start > 6 && end > start) {
-                        return json.substring(start, end);
+                        String sub = json.substring(start, end);
+                        logger.info("[extractUserIdFromToken] Extracted sub: {}", sub);
+                        return sub;
                     }
                 }
             }
         } catch (Exception e) {
-            // Decoding failed
+            logger.error("[extractUserIdFromToken] Exception decoding token", e);
         }
         return null;
     }

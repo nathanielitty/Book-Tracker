@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { getUserBooks, addReviewAndRating, UserBook, ReadingStatus } from '../api/libraryApi';
+import { getUserBooks, addReviewAndRating, updateBookStatus, UserBook, ReadingStatus } from '../api/libraryApi';
 import { getBookById, Book as APIBook } from '../api/bookApi';
 
 // Combined library entry with book details
@@ -55,6 +55,29 @@ const Shelf: React.FC = () => {
       console.error('Rating error:', err);
     }
   };
+  
+  // Change reading status and refresh shelf or remove moved books
+  const handleStatusChange = async (entryId: string, bookId: string, newStatus: ReadingStatus) => {
+    try {
+      const updated = await updateBookStatus(userId!, bookId, newStatus);
+      // If status matches current shelf, update in place, else remove
+      const currentShelfKey = shelf?.toLowerCase();
+      const statusKeyMap: Record<string, string> = {
+        'want-to-read': 'WANT_TO_READ',
+        reading: 'CURRENTLY_READING',
+        read: 'READ',
+        dnf: 'DNF',
+      };
+      const currentStatus = statusKeyMap[currentShelfKey!] ?? currentShelfKey?.toUpperCase();
+      if (updated.status === currentStatus) {
+        setBooks(prev => prev.map(b => b.libraryEntryId === entryId ? { ...b, status: updated.status } as EnrichedBook : b));
+      } else {
+        setBooks(prev => prev.filter(b => b.libraryEntryId !== entryId));
+      }
+    } catch (err) {
+      console.error('Status update error:', err);
+    }
+  };
 
   if (loading) return <div>Loading shelf...</div>;
   if (!loading && books.length === 0) return (
@@ -65,7 +88,19 @@ const Shelf: React.FC = () => {
 
   return (
     <div className="p-4">
-      <h2>{username}'s {shelf?.replace(/-/g,' ')?.toUpperCase()} Shelf</h2>
+      <h2 className="text-2xl font-semibold">{username}'s Library</h2>
+      {/* Shelf Tabs */}
+      <div className="flex space-x-4 mt-2 mb-4">
+        {['want-to-read', 'reading', 'read', 'dnf'].map(key => (
+          <Link
+            key={key}
+            to={`/shelf/${key}`}
+            className={`px-3 py-1 rounded-lg transition-colors ${shelf === key ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
+          >
+            {key.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          </Link>
+        ))}
+      </div>
       <table className="min-w-full mt-4 border-collapse">
         <thead>
           <tr className="border-b">
@@ -85,7 +120,15 @@ const Shelf: React.FC = () => {
               </td>
               <td className="px-2 py-1">{b.title}</td>
               <td className="px-2 py-1">{b.author}</td>
-              <td className="px-2 py-1">{b.status.replace('_',' ').toLowerCase()}</td>
+              <td className="px-2 py-1">
+                <select value={b.status} onChange={e => handleStatusChange(b.libraryEntryId, b.bookId, e.target.value as ReadingStatus)}
+                  className="bg-gray-700 text-white px-2 py-1 rounded">
+                  <option value="WANT_TO_READ">Want to Read</option>
+                  <option value="CURRENTLY_READING">Reading</option>
+                  <option value="READ">Read</option>
+                  <option value="DNF">DNF</option>
+                </select>
+              </td>
               <td className="px-2 py-1">{b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '-'}</td>
               <td className="px-2 py-1">
                 <select value={b.rating||0} onChange={e=>handleRate(b.libraryEntryId, b.bookId, +e.target.value)}>
